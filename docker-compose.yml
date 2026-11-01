@@ -1,0 +1,21 @@
+name: absensi-admin-web
+
+services:
+  absensi-admin-web:
+    image: "${DOCKER_IMAGE:?Set DOCKER_IMAGE in .env}:${IMAGE_TAG:?Set IMAGE_TAG in .env}"
+    build: .
+    environment:
+      API_UPSTREAM: "${API_UPSTREAM:?Set API_UPSTREAM in .env}"
+      NGINX_ENVSUBST_FILTER: "^API_UPSTREAM$"
+    ports:
+      - "127.0.0.1:${WEB_PORT:?Set WEB_PORT in .env}:80"
+    networks:
+      - absen
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+networks:
+  absen:
+    external: true
+    name: "${API_NETWORK:?Set API_NETWORK in .env}"
