@@ -21,6 +21,7 @@ export function EmployeeForm({
   onSaved: () => void;
 }) {
   const [form, setForm] = useState<EmployeeWrite>({
+    nik: employee?.nik ?? "",
     name: employee?.name ?? "",
     phone: employee?.phone ?? "",
     mitra_id: employee?.mitra_id ?? "",
@@ -92,6 +93,18 @@ export function EmployeeForm({
           />
           {valid.name && <small className="text-error">{valid.name}</small>}
         </Field>
+        <Field label="NIK KTP">
+          <input
+            className="control"
+            inputMode="numeric"
+            maxLength={16}
+            placeholder="16 digit NIK KTP"
+            value={form.nik}
+            onChange={(e) => change("nik", e.target.value)}
+            aria-invalid={!!valid.nik}
+          />
+          {valid.nik && <small className="text-error">{valid.nik}</small>}
+        </Field>
         <PhoneField
           value={form.phone ?? ""}
           onChange={(phone) => change("phone", phone)}
@@ -99,8 +112,8 @@ export function EmployeeForm({
         />
         {employee && (
           <small className="text-muted">
-            Mengganti nomor HP akan mengeluarkan karyawan dari semua sesi.
-            Kosongkan untuk mempertahankan nomor lama.
+            Mengubah data karyawan akan mengeluarkan karyawan dari semua sesi.
+            Kosongkan nomor HP untuk mempertahankan nomor lama.
           </small>
         )}
         <Field label="MITRA">

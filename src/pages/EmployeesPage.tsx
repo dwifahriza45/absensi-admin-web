@@ -53,7 +53,7 @@ export function EmployeesPage() {
   const items = employees.filter(
     (item) =>
       (!needle ||
-        `${item.name} ${item.phone ?? ""}`
+        `${item.name} ${item.nik ?? ""} ${item.phone ?? ""}`
           .toLocaleLowerCase("id-ID")
           .includes(needle) ||
         (!!phoneNeedle && (item.phone ?? "").includes(phoneNeedle))) &&
@@ -244,7 +244,7 @@ export function EmployeesPage() {
               className="control control--search"
               type="search"
               aria-label="Cari karyawan"
-              placeholder="Cari nama atau nomor HP…"
+              placeholder="Cari nama, NIK, atau nomor HP…"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -360,6 +360,7 @@ export function EmployeesPage() {
                 </th>
                 <th>No.</th>
                 <th>Nama karyawan</th>
+                <th>NIK KTP</th>
                 <th>Nomor HP</th>
                 <th>Mitra</th>
                 <th>Bidang</th>
@@ -371,7 +372,7 @@ export function EmployeesPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="empty-state">
+                  <td colSpan={9} className="empty-state">
                     Memuat data karyawan…
                   </td>
                 </tr>
@@ -402,6 +403,7 @@ export function EmployeesPage() {
                     <td>
                       <strong>{item.name}</strong>
                     </td>
+                    <td>{item.nik || "Belum diisi"}</td>
                     <td>
                       {item.phone ? (
                         <a href={`tel:${item.phone}`}>
@@ -459,7 +461,7 @@ export function EmployeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="empty-state">
+                  <td colSpan={9} className="empty-state">
                     Tidak ada karyawan yang sesuai filter. Ubah filter atau
                     tambahkan karyawan.
                   </td>
@@ -514,6 +516,8 @@ export function EmployeesPage() {
           <dl className="detail-list">
             <dt>Nama lengkap</dt>
             <dd>{detail.name}</dd>
+            <dt>NIK KTP</dt>
+            <dd>{detail.nik || "Belum diisi"}</dd>
             <dt>Nomor HP</dt>
             <dd>{detail.phone || "Belum diisi"}</dd>
             <dt>Mitra</dt>

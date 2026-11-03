@@ -44,6 +44,7 @@ async function apiFixture(page: Page, loggedIn = true) {
         can_delete: false,
         delete_reason:
           "Karyawan sudah memiliki riwayat absensi dan tidak dapat dihapus.",
+        nik: "0123456789012345",
         phone: "081234567890",
         mitra_id: "MTR-20261031-000001",
         bidang_id: "BID-20261031-000001",
@@ -123,6 +124,8 @@ async function apiFixture(page: Page, loggedIn = true) {
       expect(body.deactivateMissing).toBe(false);
       expect(body.rows).toHaveLength(2);
       expect(body.rows[0]).toEqual({
+        nik: "0123456789012346",
+        employee_id: "",
         name: "Import Karyawan",
         phone: "6281234567899",
         mitra: "Mitra Demo",
@@ -432,6 +435,7 @@ test("employee master IDs, contact, unchanged phone, deactivate and restore", as
     .click();
   await expect(page.getByLabel("STATUS", { exact: true })).toHaveCount(0);
   await page.getByLabel("NAMA LENGKAP", { exact: true }).fill("Karyawan Baru");
+  await page.getByLabel("NIK KTP", { exact: true }).fill("0123456789012346");
   await page.getByLabel("NOMOR HP", { exact: true }).fill("081234567899");
   await page
     .getByLabel("MITRA", { exact: true })
@@ -442,14 +446,17 @@ test("employee master IDs, contact, unchanged phone, deactivate and restore", as
   await page
     .getByRole("button", { name: "Simpan karyawan", exact: true })
     .click();
+  expect(state.writes.at(-1)?.body.nik).toBe("0123456789012346");
   expect(state.writes.at(-1)?.body.mitra_id).toBe("MTR-20261031-000001");
   const row = page
     .getByRole("row")
     .filter({ has: page.getByText("Karyawan Baru", { exact: true }) });
   await row.getByRole("button", { name: "Ubah", exact: true }).click();
+  await page.getByLabel("NIK KTP", { exact: true }).fill("0123456789012347");
   await page
     .getByRole("button", { name: "Simpan karyawan", exact: true })
     .click();
+  expect(state.writes.at(-1)?.body.nik).toBe("0123456789012347");
   expect(state.writes.at(-1)?.body.phone).toBeUndefined();
   expect(state.writes.at(-1)?.body.isActive).toBeUndefined();
   await row.getByRole("button", { name: "Nonaktifkan", exact: true }).click();
@@ -507,6 +514,7 @@ test("employee Excel preview and per-row import result stay visible", async ({
   const workbook = XLSX.utils.book_new();
   const sheet = XLSX.utils.json_to_sheet([
     {
+      NIK: "0123456789012346",
       "NAMA LENGKAP": "Import Karyawan",
       MITRA: "Mitra Demo",
 
@@ -572,7 +580,9 @@ for (const resource of ["mitra", "bidang", "employees"] as const) {
           employee_count: 0,
         });
     }
-    await page.goto(resource === "employees" ? "/admin/karyawan" : `/admin/${resource}`);
+    await page.goto(
+      resource === "employees" ? "/admin/karyawan" : `/admin/${resource}`,
+    );
     const protectedCheck = page.getByRole("checkbox", {
       name: `Pilih ${original.name}`,
       exact: true,
@@ -795,12 +805,21 @@ test("monitoring displays API snake_case selfie and work report photos", async (
     .filter({ hasText: "Karyawan Demo" })
     .click();
   await expect(page.locator(".detail__selfies .photo-thumb")).toHaveCount(2);
-  await page.locator(".table__row").filter({ hasText: "Karyawan Demo" }).click();
+  await page
+    .locator(".table__row")
+    .filter({ hasText: "Karyawan Demo" })
+    .click();
   await expect(page.locator(".detail--empty")).toBeVisible();
-  await page.locator(".table__row").filter({ hasText: "Karyawan Demo" }).click();
+  await page
+    .locator(".table__row")
+    .filter({ hasText: "Karyawan Demo" })
+    .click();
   await page.getByRole("button", { name: "Tutup detail" }).click();
   await expect(page.locator(".detail--empty")).toBeVisible();
-  await page.locator(".table__row").filter({ hasText: "Karyawan Demo" }).click();
+  await page
+    .locator(".table__row")
+    .filter({ hasText: "Karyawan Demo" })
+    .click();
   for (const image of await page.locator(".detail__selfies .photo-thumb").all())
     await expect(image).toHaveCSS("background-image", /blob:/);
   await expect(page.locator(".detail__work .photo-thumb").first()).toHaveCSS(
@@ -1000,6 +1019,8 @@ test("recap PDF follows filters and both exports reject more than one month", as
     recapCalls++;
     const query = new URL(route.request().url()).searchParams;
     expect(query.get("q")).toBe("Karyawan Demo");
+    expect(query.get("mitra")).toBe("Mitra Demo");
+    expect(query.has("bidang")).toBe(false);
     expect(query.get("include_absent")).toBe("true");
     return route.fulfill({
       contentType: "application/pdf",
@@ -1012,7 +1033,9 @@ test("recap PDF follows filters and both exports reject more than one month", as
   for (const name of ["Rekap", "Export Excel"]) {
     await page.getByRole("button", { name, exact: true }).click();
     await expect(page.getByRole("dialog")).toContainText(
-      "Silakan pilih Mitra dan Bidang terlebih dahulu",
+      name === "Rekap"
+        ? "Silakan pilih Mitra terlebih dahulu"
+        : "Silakan pilih Mitra dan Bidang terlebih dahulu",
     );
     await page.getByRole("button", { name: "Mengerti", exact: true }).click();
   }
@@ -1020,20 +1043,19 @@ test("recap PDF follows filters and both exports reject more than one month", as
   await page
     .getByRole("combobox", { name: "MITRA", exact: true })
     .selectOption("Mitra Demo");
-  await page.getByRole("button", { name: "Rekap", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "Silakan pilih Mitra dan Bidang terlebih dahulu",
-  );
-  await page.getByRole("button", { name: "Mengerti", exact: true }).click();
-  await page
-    .getByRole("combobox", { name: "BIDANG", exact: true })
-    .selectOption("Bidang Demo");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Rekap", exact: true }).click();
   expect((await download).suggestedFilename()).toMatch(
     /^rekap-absensi-.*\.pdf$/,
   );
   expect(recapCalls).toBe(1);
+  await page
+    .getByRole("combobox", { name: "BIDANG", exact: true })
+    .selectOption("Bidang Demo");
+  const filteredDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Rekap", exact: true }).click();
+  await filteredDownload;
+  expect(recapCalls).toBe(2);
   await page.getByLabel("DARI TANGGAL", { exact: true }).fill("2026-09-01");
   await page.getByLabel("SAMPAI", { exact: true }).fill("2026-11-01");
   const message =
@@ -1043,5 +1065,5 @@ test("recap PDF follows filters and both exports reject more than one month", as
     await expect(page.getByRole("dialog")).toContainText(message);
     await page.getByRole("button", { name: "Mengerti", exact: true }).click();
   }
-  expect(recapCalls).toBe(1);
+  expect(recapCalls).toBe(2);
 });

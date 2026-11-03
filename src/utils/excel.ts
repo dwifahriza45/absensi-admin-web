@@ -54,6 +54,8 @@ export async function downloadEmployeeTemplate() {
 
 // Nama kolom yang diterima (tanpa spasi/tanda baca, huruf kecil).
 const COLUMN_ALIASES: Record<keyof ImportRow, string[]> = {
+  nik: ["nik", "nomorindukkependudukan"],
+  employee_id: ["idkaryawan", "employeeid", "idpegawai"],
   name: ["namalengkap", "nama", "namapegawai", "namakaryawan"],
   mitra: ["mitra", "kantor"],
 
@@ -92,6 +94,8 @@ export async function readEmployeeFile(file: File): Promise<ImportRow[]> {
           .map((alias) => byHeader.get(alias))
           .find(Boolean) ?? "";
       return {
+        nik: pick("nik"),
+        employee_id: pick("employee_id"),
         name: pick("name"),
         mitra: pick("mitra"),
 
@@ -99,7 +103,7 @@ export async function readEmployeeFile(file: File): Promise<ImportRow[]> {
         phone: normalizePhone(pick("phone")),
       };
     })
-    .filter((row) => row.name || row.phone);
+    .filter((row) => row.name || row.phone || row.nik || row.employee_id);
 }
 
 // Check ZIP metadata before parsing to bound memory for compressed workbooks.

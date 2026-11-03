@@ -94,9 +94,11 @@ export function MonitoringPage() {
       setExportError(rangeError);
       return;
     }
-    if (!filter.mitra.trim() || !filter.bidang.trim()) {
+    if (!filter.mitra.trim() || (kind === "excel" && !filter.bidang.trim())) {
       setExportError(
-        "Silakan pilih Mitra dan Bidang terlebih dahulu sebelum mengunduh rekap atau mengekspor data absensi.",
+        kind === "pdf"
+          ? "Silakan pilih Mitra terlebih dahulu sebelum mengunduh rekap."
+          : "Silakan pilih Mitra dan Bidang terlebih dahulu sebelum mengekspor data absensi.",
       );
       return;
     }
@@ -123,6 +125,7 @@ export function MonitoringPage() {
       else
         await attendanceApi.recap({
           ...apiFilter,
+          bidang: "",
           q: query.trim(),
           status: statFilter ?? "",
           include_absent: String(

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { authApi, type Admin } from "@/api/auth.api";
 import { allowSessionRefresh, isUnauthorized } from "@/api/client";
+import { setPhotoCacheOwner } from "@/api/photo.api";
 import { clearPhotoCache } from "@/hooks/usePhotoUrl";
 
 interface AuthContextValue {
@@ -29,10 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setSessionError(null);
     try {
-      setUser(await authApi.me());
+      const admin = await authApi.me();
+      setPhotoCacheOwner(admin.user_id);
+      setUser(admin);
     } catch (error) {
-      if (isUnauthorized(error)) setUser(null);
-      else
+      if (isUnauthorized(error)) {
+        clearPhotoCache();
+        setUser(null);
+      } else
         setSessionError(
           error instanceof Error ? error.message : "Gagal memeriksa sesi.",
         );
@@ -54,7 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     await authApi.login(email, password);
     allowSessionRefresh(true);
-    setUser(await authApi.me());
+    const admin = await authApi.me();
+    setPhotoCacheOwner(admin.user_id);
+    setUser(admin);
     setSessionError(null);
   }, []);
   const logout = useCallback(async () => {

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { photoApi } from "@/api/photo.api";
+import { clearStoredPhotoCache, photoApi } from "@/api/photo.api";
 
 // Disimpan selama halaman terbuka agar foto yang sama tidak diunduh berkali-kali.
 const cache = new Map<string, string>();
 let cacheGeneration = 0;
 
 export function clearPhotoCache() {
+  clearStoredPhotoCache();
   cacheGeneration++;
   for (const url of cache.values()) URL.revokeObjectURL(url);
   cache.clear();

@@ -35,7 +35,7 @@ export function ImportDialog({ onClose, onImported }: ImportDialogProps) {
       const parsed = await readEmployeeFile(file);
       setRows(parsed);
       if (!parsed.length)
-        setError("File kosong atau kolom Nama/Nomor HP tidak ditemukan.");
+        setError("File kosong atau kolom Nama/NIK tidak ditemukan.");
     } catch (err) {
       setRows([]);
       setError(
@@ -83,9 +83,13 @@ export function ImportDialog({ onClose, onImported }: ImportDialogProps) {
       }
     >
       <p className="text-muted">
-        Kolom Excel: <strong>Nama, Mitra, Bidang, Nomor HP</strong>. Pegawai
-        dengan nomor HP yang sama akan diperbarui. Nomor HP disimpan terenkripsi
-        dan dapat dilihat admin.
+        Kolom Excel:{" "}
+        <strong>Nama, Nomor HP, Mitra, Bidang, NIK, ID Karyawan</strong>. NIK
+        wajib 16 digit dan unik; isi kolom NIK sebagai teks di Excel. ID
+        Karyawan dari hasil export digunakan untuk memperbarui karyawan,
+        termasuk mengganti NIK. Jangan ubah ID Karyawan. Kosongkan ID untuk
+        karyawan baru; NIK yang sudah terdaftar akan diperbarui. Karyawan lama
+        yang belum memiliki NIK dicocokkan lewat nomor HP.
       </p>
       <ImportTemplateDownload
         disabled={saving}
@@ -117,7 +121,8 @@ export function ImportDialog({ onClose, onImported }: ImportDialogProps) {
             <div key={index} className="import-preview__row">
               <strong>{row.name || "(tanpa nama)"}</strong>
               <span>
-                {[row.mitra, row.bidang].filter(Boolean).join(" · ") || "—"}
+                {[row.nik, row.mitra, row.bidang].filter(Boolean).join(" · ") ||
+                  "—"}
               </span>
             </div>
           ))}

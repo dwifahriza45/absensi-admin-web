@@ -23,13 +23,13 @@ Login menggunakan **email dan password admin**, bukan PIN. Session memakai cooki
 - `/admin/`: dashboard pemantauan absensi dengan filter, peta, foto, dan export sebelumnya.
 - `/admin/mitra`: list, pencarian, pagination, detail, tambah/ubah/hapus, export XLSX, template dan import file. Header template/export hanya **NAMA MITRA**.
 - `/admin/bidang`: fitur yang sama, header **NAMA BIDANG**.
-- `/admin/karyawan`: list, pencarian nama/HP, filter mitra/bidang/status, detail, tambah/ubah, nonaktifkan dan aktifkan kembali lewat ikon power di tabel. Mitra/bidang dipilih dari data master; API menerima kode INT/BID dan path memakai EMP. Nomor HP tampil untuk admin; data lama yang belum mempunyai nomor terenkripsi ditandai “Belum diisi”.
+- `/admin/karyawan`: list, pencarian nama/NIK/HP, filter mitra/bidang/status, detail, tambah/ubah, nonaktifkan dan aktifkan kembali lewat ikon power di tabel. Mitra/bidang dipilih dari data master; API menerima kode INT/BID dan path memakai EMP. Nomor HP tampil untuk admin; data lama yang belum mempunyai nomor terenkripsi ditandai “Belum diisi”.
 
 Import master mengirim multipart field `file` langsung ke backend, maksimal 8 MiB/5.000 baris. Ringkasan menampilkan jumlah berhasil/dilewati/error dan detail per baris yang dapat difilter. Template dan file export dapat langsung digunakan ulang; nama yang sudah ada di-skip. Rename master lama lewat form Ubah, bukan mengganti nama di file satu kolom.
 
-Import karyawan menggunakan format Excel **Nama, Mitra, Bidang, Nomor HP**, dibaca di frontend dan dikirim sebagai JSON ke endpoint employee import yang sudah ada. Batas 4 MiB/file, 32 MiB setelah dibuka, 5.000 baris. Hasil menampilkan jumlah baru/diperbarui/dinonaktifkan dan baris dilewati beserta alasan. Opsi nonaktifkan data yang tidak ada dalam file tidak aktif secara default. Import karyawan tetap membuat/mencari master dari nama sesuai aturan backend.
+Import karyawan menggunakan format Excel **Nama, Nomor HP, Mitra, Bidang, NIK, ID Karyawan**, dibaca di frontend dan dikirim sebagai JSON ke endpoint employee import yang sudah ada. Batas 4 MiB/file, 32 MiB setelah dibuka, 5.000 baris. Hasil menampilkan jumlah baru/diperbarui/dinonaktifkan dan baris dilewati beserta alasan. Opsi nonaktifkan data yang tidak ada dalam file tidak aktif secara default. Import karyawan tetap membuat/mencari master dari nama sesuai aturan backend.
 
-Ubah nomor HP mencabut session karyawan. Frontend tidak mengirim phone jika nilainya tidak berubah, supaya edit penempatan tidak ikut mencabut session. Karyawan tanpa attendance dapat dihapus permanen; semua sesi ikut dicabut. Ikon hapus disabled dengan tooltip bila sudah ada riwayat absensi. Form Tambah/Ubah tidak memuat Status. Nonaktifkan/aktifkan dilakukan lewat ikon power di tabel, dengan konfirmasi. Endpoint status hanya mengubah isActive sehingga edit profil tidak menimpa status. Master yang masih dipakai karyawan tidak dapat dihapus.
+NIK wajib 16 digit dan unik, bisa diubah. Menyimpan perubahan profil mencabut session karyawan agar login ulang memakai nama + NIK terbaru. Frontend tidak mengirim phone jika nilainya tidak berubah. Karyawan tanpa attendance dapat dihapus permanen; semua sesi ikut dicabut. Ikon hapus disabled dengan tooltip bila sudah ada riwayat absensi. Form Tambah/Ubah tidak memuat Status. Nonaktifkan/aktifkan dilakukan lewat ikon power di tabel, dengan konfirmasi. Endpoint status hanya mengubah isActive sehingga edit profil tidak menimpa status. Master yang masih dipakai karyawan tidak dapat dihapus.
 
 ## Verifikasi
 
@@ -86,7 +86,7 @@ Buat repository Docker Hub **absensi-admin-web**. Tambahkan repository secrets G
 
 Hasil build ada di `dist`. Pasang isi `dist` pada direktori `/admin/`. Arahkan `/admin` ke `/admin/`, dan gunakan fallback SPA khusus `/admin/*` ke `/admin/index.html` agar reload halaman seperti `/admin/karyawan` tetap berfungsi. Root `/` dan fallback-nya dipakai aplikasi pegawai, sementara `/api` di-reverse proxy ke absensi-api. Base asset Vite dan basename router admin sudah `/admin/`; endpoint API tetap `/api/v1/admin/*`. Halaman login admin berada di `/admin/login`. `VITE_API_URL` adalah target proxy development, bukan alamat hardcoded browser. Daftarkan origin frontend production yang tepat di `CORS_ORIGINS` backend dan gunakan HTTPS dengan Secure cookies. Foto dan download XLSX juga memakai API client cookie yang sama.
 
-Halaman Karyawan juga menyediakan **Export Excel** dari API `/api/v1/admin/employees/export`. Export mengikuti pencarian nama/HP, filter mitra/bidang/status dan mencakup semua halaman. Kolom: Nama Lengkap, Nomor HP, Mitra, Bidang, Status; nomor HP tetap teks dan header memakai gaya biru tua yang sama dengan master.
+Halaman Karyawan juga menyediakan **Export Excel** dari API `/api/v1/admin/employees/export`. Export mengikuti pencarian nama/NIK/HP, filter mitra/bidang/status dan mencakup semua halaman. Kolom: Nama Lengkap, Nomor HP, Mitra, Bidang, NIK, ID Karyawan; NIK dan nomor HP tetap teks dan header memakai gaya biru tua yang sama dengan master.
 
 ## Checklist hapus beberapa data
 
@@ -98,4 +98,6 @@ Detail Pemantauan Absensi menyediakan tombol Download PDF di sebelah Zoom ke lok
 
 Tombol PDF + Rekap di sebelah Export Excel mengambil seluruh hasil filter aktif dari API sebagai satu PDF. Rentang daftar/export maksimal 31 hari inklusif; jika melebihi batas, tampil pesan profesional dan unduhan dibatalkan. PDF diproses bertahap di server dan satu rekap berat dijalankan per instance; tombol unduhan dikunci selama proses. PDF terputus ditolak klien. Untuk rentang panjang, tanggal tanpa catatan mengikuti perilaku daftar (ditampilkan saat mencari nama atau memilih status Belum absen).
 
-Untuk Rekap PDF dan Export Excel absensi, admin wajib memilih satu Mitra dan satu Bidang; pilihan Semua tidak dapat dipakai untuk unduhan. Rekap juga memvalidasi kedua filter di API sebelum mengambil data. Batas 31 hari tetap berlaku.
+Rekap PDF absensi wajib memilih satu Mitra dan mencakup semua bidang dalam mitra tersebut; filter Bidang diabaikan untuk rekap. API juga memvalidasi Mitra sebelum mengambil data. Export Excel tetap wajib memilih satu Mitra dan satu Bidang. Batas 31 hari tetap berlaku.
+
+NIK KTP dipakai bersama nama untuk login pegawai. Isi NIK asli karyawan lama lewat form atau import setelah migration 000011. Untuk mengganti NIK lewat import, gunakan hasil export dan pertahankan ID Karyawan agar riwayat absensi tetap terhubung. Tanpa ID, NIK yang sama memperbarui profil; data lama tanpa NIK dapat dicocokkan dari nomor HP. Format kolom NIK sebagai teks di Excel untuk mempertahankan seluruh 16 digit.
