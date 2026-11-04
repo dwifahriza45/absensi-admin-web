@@ -1,4 +1,3 @@
-import { formatPhone, normalizePhone } from "@/utils/phone";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { SelectionCheckbox } from "@/components/ui/SelectionCheckbox";
 import { BulkSelectionBar } from "@/components/ui/BulkSelectionBar";
@@ -47,16 +46,12 @@ export function EmployeesPage() {
   const [bulkTargets, setBulkTargets] = useState<BulkDeleteItem[] | null>(null);
   const employees = data?.employees ?? [];
   const needle = query.trim().toLocaleLowerCase("id-ID");
-  const phoneNeedle = /^[+0-9 ()-]+$/.test(needle)
-    ? normalizePhone(needle)
-    : "";
   const items = employees.filter(
     (item) =>
       (!needle ||
-        `${item.name} ${item.nik ?? ""} ${item.phone ?? ""}`
+        `${item.name} ${item.nik ?? ""}`
           .toLocaleLowerCase("id-ID")
-          .includes(needle) ||
-        (!!phoneNeedle && (item.phone ?? "").includes(phoneNeedle))) &&
+          .includes(needle)) &&
       (!institution || item.mitra_id === institution) &&
       (!division || item.bidang_id === division) &&
       (status === "all" || item.isActive === (status === "active")),
@@ -166,7 +161,7 @@ export function EmployeesPage() {
         <div>
           <span className="eyebrow">DATA KARYAWAN</span>
           <h1>Data Karyawan</h1>
-          <p>Kelola identitas, kontak, dan penempatan karyawan.</p>
+          <p>Kelola identitas dan penempatan karyawan.</p>
         </div>
         <Button
           variant="primary"
@@ -244,7 +239,7 @@ export function EmployeesPage() {
               className="control control--search"
               type="search"
               aria-label="Cari karyawan"
-              placeholder="Cari nama, NIK, atau nomor HP…"
+              placeholder="Cari nama atau NIK…"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -361,7 +356,6 @@ export function EmployeesPage() {
                 <th>No.</th>
                 <th>Nama karyawan</th>
                 <th>NIK KTP</th>
-                <th>Nomor HP</th>
                 <th>Mitra</th>
                 <th>Bidang</th>
 
@@ -372,7 +366,7 @@ export function EmployeesPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="empty-state">
+                  <td colSpan={8} className="empty-state">
                     Memuat data karyawan…
                   </td>
                 </tr>
@@ -404,15 +398,6 @@ export function EmployeesPage() {
                       <strong>{item.name}</strong>
                     </td>
                     <td>{item.nik || "Belum diisi"}</td>
-                    <td>
-                      {item.phone ? (
-                        <a href={`tel:${item.phone}`}>
-                          {formatPhone(item.phone)}
-                        </a>
-                      ) : (
-                        <span className="text-muted">Belum diisi</span>
-                      )}
-                    </td>
                     <td>{item.mitra || "—"}</td>
                     <td>{item.bidang || "—"}</td>
 
@@ -461,7 +446,7 @@ export function EmployeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="empty-state">
+                  <td colSpan={8} className="empty-state">
                     Tidak ada karyawan yang sesuai filter. Ubah filter atau
                     tambahkan karyawan.
                   </td>
@@ -518,8 +503,6 @@ export function EmployeesPage() {
             <dd>{detail.name}</dd>
             <dt>NIK KTP</dt>
             <dd>{detail.nik || "Belum diisi"}</dd>
-            <dt>Nomor HP</dt>
-            <dd>{detail.phone || "Belum diisi"}</dd>
             <dt>Mitra</dt>
             <dd>{detail.mitra || "—"}</dd>
             <dt>Bidang</dt>

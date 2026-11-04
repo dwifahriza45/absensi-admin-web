@@ -1,5 +1,4 @@
 import { employeeApi } from "@/api/employee.api";
-import { normalizePhone } from "./phone";
 import type { ImportRow } from "@/types";
 import { STATUS_LABEL, type AttendanceRow } from "./attendanceRows";
 import { attendanceRangeError, formatTime, fromIso } from "./date";
@@ -60,7 +59,6 @@ const COLUMN_ALIASES: Record<keyof ImportRow, string[]> = {
   mitra: ["mitra", "kantor"],
 
   bidang: ["jobdesk", "bidang", "bidangpekerjaan", "jabatan", "pekerjaan"],
-  phone: ["nomorhp", "nohp", "hp", "nomortelepon", "notelp", "telepon"],
 };
 
 const normalizeHeader = (header: string) =>
@@ -100,10 +98,9 @@ export async function readEmployeeFile(file: File): Promise<ImportRow[]> {
         mitra: pick("mitra"),
 
         bidang: pick("bidang"),
-        phone: normalizePhone(pick("phone")),
       };
     })
-    .filter((row) => row.name || row.phone || row.nik || row.employee_id);
+    .filter((row) => row.name || row.nik || row.employee_id);
 }
 
 // Check ZIP metadata before parsing to bound memory for compressed workbooks.

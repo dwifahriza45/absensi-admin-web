@@ -127,7 +127,6 @@ async function apiFixture(page: Page, loggedIn = true) {
         nik: "0123456789012346",
         employee_id: "",
         name: "Import Karyawan",
-        phone: "6281234567899",
         mitra: "Mitra Demo",
         bidang: "Bidang Demo",
       });
@@ -136,7 +135,11 @@ async function apiFixture(page: Page, loggedIn = true) {
         updated: 0,
         deactivated: 0,
         skipped: [
-          { row: 3, name: "Nomor Tidak Valid", reason: "Nomor HP tidak valid" },
+          {
+            row: 3,
+            name: "NIK Tidak Valid",
+            reason: "NIK Harus 16 Digit Angka",
+          },
         ],
       });
     }
@@ -405,7 +408,7 @@ for (const [kind, label] of [
   });
 }
 
-test("employee master IDs, contact, unchanged phone, deactivate and restore", async ({
+test("employee master IDs, no phone fields, deactivate and restore", async ({
   page,
 }) => {
   const state = await apiFixture(page);
@@ -414,8 +417,9 @@ test("employee master IDs, contact, unchanged phone, deactivate and restore", as
     page.getByRole("heading", { name: "Data Karyawan", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "+62 812-3456-7890", exact: true }),
-  ).toHaveAttribute("href", "tel:081234567890");
+    page.getByRole("columnheader", { name: "Nomor HP", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator('a[href^="tel:"]')).toHaveCount(0);
   const protectedRow = page
     .getByRole("row")
     .filter({ has: page.getByText("Karyawan Demo", { exact: true }) });
@@ -436,7 +440,7 @@ test("employee master IDs, contact, unchanged phone, deactivate and restore", as
   await expect(page.getByLabel("STATUS", { exact: true })).toHaveCount(0);
   await page.getByLabel("NAMA LENGKAP", { exact: true }).fill("Karyawan Baru");
   await page.getByLabel("NIK KTP", { exact: true }).fill("0123456789012346");
-  await page.getByLabel("NOMOR HP", { exact: true }).fill("081234567899");
+  await expect(page.getByLabel("NOMOR HP", { exact: true })).toHaveCount(0);
   await page
     .getByLabel("MITRA", { exact: true })
     .selectOption("MTR-20261031-000001");
@@ -504,51 +508,54 @@ test("employee master IDs, contact, unchanged phone, deactivate and restore", as
   expect(state.writes.at(-1)?.method).toBe("DELETE");
 });
 
-test("employee Excel preview and per-row import result stay visible", async ({
-  page,
-}) => {
-  await apiFixture(page);
-  await page.goto("/admin/karyawan");
-  await page.getByRole("button", { name: "Import Excel", exact: true }).click();
-  const dialog = page.getByRole("dialog");
-  const workbook = XLSX.utils.book_new();
-  const sheet = XLSX.utils.json_to_sheet([
-    {
-      NIK: "0123456789012346",
-      "NAMA LENGKAP": "Import Karyawan",
-      MITRA: "Mitra Demo",
+for (const legacy of [false, true]) {
+  test(`employee Excel preview and per-row import result stay visible (legacy=${legacy})`, async ({
+    page,
+  }) => {
+    await apiFixture(page);
+    await page.goto("/admin/karyawan");
+    await page
+      .getByRole("button", { name: "Import Excel", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    const workbook = XLSX.utils.book_new();
+    const sheet = XLSX.utils.json_to_sheet([
+      {
+        ...(legacy ? { "NOMOR HP": "081234567899" } : {}),
+        NIK: "0123456789012346",
+        "NAMA LENGKAP": "Import Karyawan",
+        MITRA: "Mitra Demo",
 
-      BIDANG: "Bidang Demo",
-      "NOMOR HP": "6281234567899",
-    },
-    {
-      "NAMA LENGKAP": "Nomor Tidak Valid",
-      MITRA: "Mitra Demo",
+        BIDANG: "Bidang Demo",
+      },
+      {
+        "NAMA LENGKAP": "NIK Tidak Valid",
+        MITRA: "Mitra Demo",
 
-      BIDANG: "Bidang Demo",
-      "NOMOR HP": "abc",
-    },
-  ]);
-  XLSX.utils.book_append_sheet(workbook, sheet, "Karyawan");
-  await dialog.locator("input[type=file]").setInputFiles({
-    name: "karyawan.xlsx",
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    buffer: Buffer.from(
-      XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
-    ),
+        BIDANG: "Bidang Demo",
+      },
+    ]);
+    XLSX.utils.book_append_sheet(workbook, sheet, "Karyawan");
+    await dialog.locator("input[type=file]").setInputFiles({
+      name: "karyawan.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from(
+        XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
+      ),
+    });
+    await dialog
+      .getByRole("button", { name: "Simpan 2 pegawai", exact: true })
+      .click();
+    await expect(
+      dialog.getByText("NIK Harus 16 Digit Angka", { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.locator(".import-counts")).toContainText("1 Baru");
+    await expect(dialog.locator(".import-counts")).toContainText("1 Dilewati");
+    await dialog.getByRole("button", { name: "Tutup", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
   });
-  await dialog
-    .getByRole("button", { name: "Simpan 2 pegawai", exact: true })
-    .click();
-  await expect(
-    dialog.getByText("Nomor HP tidak valid", { exact: true }),
-  ).toBeVisible();
-  await expect(dialog.locator(".import-counts")).toContainText("1 Baru");
-  await expect(dialog.locator(".import-counts")).toContainText("1 Dilewati");
-  await dialog.getByRole("button", { name: "Tutup", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-});
+}
 
 for (const resource of ["mitra", "bidang", "employees"] as const) {
   test(`bulk ${resource}: safe selection across pages, cancel and stale relations`, async ({

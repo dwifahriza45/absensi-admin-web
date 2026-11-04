@@ -1,5 +1,3 @@
-import { PhoneField } from "@/components/ui/PhoneField";
-import { normalizePhone } from "@/utils/phone";
 import { useState, type FormEvent } from "react";
 import { ApiError } from "@/api/client";
 import { employeeApi } from "@/api/employee.api";
@@ -23,7 +21,6 @@ export function EmployeeForm({
   const [form, setForm] = useState<EmployeeWrite>({
     nik: employee?.nik ?? "",
     name: employee?.name ?? "",
-    phone: employee?.phone ?? "",
     mitra_id: employee?.mitra_id ?? "",
     bidang_id: employee?.bidang_id ?? "",
   });
@@ -41,11 +38,7 @@ export function EmployeeForm({
     setValid({});
     const body: EmployeeWrite = {
       ...form,
-      phone: normalizePhone(form.phone ?? ""),
     };
-    // Sending an unchanged phone would revoke sessions unnecessarily.
-    if (employee && (form.phone === employee.phone || !form.phone?.trim()))
-      delete body.phone;
     try {
       if (employee) await employeeApi.update(employee.employee_id, body);
       else await employeeApi.create(body);
@@ -105,16 +98,9 @@ export function EmployeeForm({
           />
           {valid.nik && <small className="text-error">{valid.nik}</small>}
         </Field>
-        <PhoneField
-          value={form.phone ?? ""}
-          onChange={(phone) => change("phone", phone)}
-          error={valid.phone}
-        />
-        <small className="text-muted">Nomor HP opsional.</small>
         {employee && (
           <small className="text-muted">
             Mengubah data karyawan akan mengeluarkan karyawan dari semua sesi.
-            Kosongkan nomor HP untuk mempertahankan nomor lama.
           </small>
         )}
         <Field label="MITRA">

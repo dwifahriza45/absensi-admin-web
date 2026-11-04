@@ -22,7 +22,6 @@ export interface Employee extends EmployeeLite {
   mitra_id?: string;
   bidang_id?: string;
   nik?: string;
-  phone?: string;
   isActive: boolean;
 }
 
@@ -61,7 +60,6 @@ export interface ImportRow {
   mitra: string;
 
   bidang: string;
-  phone: string;
 }
 
 export interface ImportResult {
@@ -105,7 +103,6 @@ export interface MasterImportResult {
 export interface EmployeeWrite {
   nik: string;
   name: string;
-  phone?: string;
   mitra_id: string;
   bidang_id: string;
 
