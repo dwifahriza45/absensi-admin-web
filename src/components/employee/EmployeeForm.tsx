@@ -110,6 +110,7 @@ export function EmployeeForm({
           onChange={(phone) => change("phone", phone)}
           error={valid.phone}
         />
+        <small className="text-muted">Nomor HP opsional.</small>
         {employee && (
           <small className="text-muted">
             Mengubah data karyawan akan mengeluarkan karyawan dari semua sesi.

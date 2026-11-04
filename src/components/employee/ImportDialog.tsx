@@ -86,7 +86,8 @@ export function ImportDialog({ onClose, onImported }: ImportDialogProps) {
         Kolom Excel:{" "}
         <strong>Nama Lengkap, Nomor HP, Mitra, Bidang, NIK</strong>. Format
         template import sama dengan hasil export. NIK wajib 16 digit dan unik;
-        isi kolom NIK sebagai teks di Excel. Gunakan hasil export untuk
+        isi kolom NIK sebagai teks di Excel. Nomor HP opsional; awalan 08 atau +62
+        otomatis diseragamkan menjadi 62. Gunakan hasil export untuk
         memperbarui data karyawan. Untuk karyawan baru, isi baris baru pada
         template; NIK yang sudah terdaftar akan diperbarui. Karyawan lama yang
         belum memiliki NIK dicocokkan lewat nomor HP.
